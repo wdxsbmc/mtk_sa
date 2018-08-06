@@ -31,6 +31,25 @@ class com():
                 self.ser.open()
         return 1
 
+    def init_com(self, com_port, com_baudrate, com_stopbits, com_bytesize):
+        # 创建一个com_com
+        self.com_port = com_port
+        self.com_baudrate = com_baudrate
+        self.com_stopbits = com_stopbits
+        self.com_bytesize = com_bytesize
+        try:
+            self.ser = serial.Serial(
+                port=self.com_port,
+                baudrate=self.com_baudrate,
+                stopbits=self.com_stopbits,
+                bytesize=self.com_bytesize)
+        except IOError:
+            return 0
+        else:
+            if not self.ser.isOpen():
+                self.ser.open()
+        return 1
+
     def port_is_open(self):
         return self.ser.isOpen()
 

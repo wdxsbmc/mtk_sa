@@ -18,11 +18,13 @@ root = tkinter.Tk()
 
 
 btn_name = locals()
+status_name = locals()
 
 root.title("MTK SA TestV1.0.1")
 SERIAL = com()
 result_data = []
 
+SA_CONFIG_INI_PATH= ".\sa_config.ini"
 
 # read save data thread
 def read_data_thd(SERIAL, test_run):
@@ -242,19 +244,52 @@ def center_window(root, width, height):
     root.geometry(size)
 
 
-#button action
+def string parse_data(msg):
+    data = msg[1:msg[1]]
+    return ''.join(data)
+
+# send recv data thread
+def send_recv_data_thd(SERIAL, item_idx, data):
+    if (SERIAL.port_is_open()):
+        SERIAL.send_recv_data(data)
+        #parse pkt
+        parse_msg = SERIAL.message
+        if(parse_msg[0] == 0x01):
+            str_info = parse_data(parse_msg)
+            status_name['status%s'%item_idx].insert(10, str_info)
+            pass
+        else if(parse_msg[0] == 0x02):
+            pass
+
+    # enable the button
+    btn_name['btn%s'%item_idx].config(state="normal")
+
+# button action
 def button_1_test():
     print(sys._getframe().f_code.co_name)
 
+    # disable button
     item_idx = 1
     btn_name['btn%s'%item_idx].config(state="disabled")
+
+    # send data
+    data[]
+    # tag
+    data.append(0x01)
+    # len
+    data.append(0x01)
+    # data
+    data.append(0x00)
+
+    # thread
+    _thread.start_new_thread(send_recv_data_thd, (SERIAL, item_idx ,data))  
     pass
 
 
-#create widget list
+# create widget list
 def init_form_by_config():
+
     cf=configparser.ConfigParser()
-    
     cf.read(".\sa_config.ini")
     sec = []
     option= []
@@ -277,9 +312,9 @@ def init_form_by_config():
             lb1.grid(column=grid_column, row=grid_row, padx=10, pady=5, sticky=W)
             #status
             grid_column = 1
-            en_status = Entry(root)
-            en_status.grid(column=grid_column, row=grid_row, pady=5)
-            en_status.insert(10, "0")
+            status_name['status%s'%item_idx] = Entry(root)
+            status_name['status%s'%item_idx].grid(column=grid_column, row=grid_row, pady=5)
+            status_name['status%s'%item_idx].insert(10, "0")
             #button
             grid_column = 2
             func_name = 'button_' + str(item_idx) + '_test'
@@ -290,11 +325,37 @@ def init_form_by_config():
             grid_row = grid_row + 1
             item_idx = item_idx + 1
 
-#init by config
+#init com
+def init_com_by_conf():
+    # read config file
+    cf=configparser.ConfigParser()
+
+    # check config file 
+    cf.read(SA_CONFIG_INI_PATH)
+    if !cf:
+        print('sa_config.ini open fail!')
+        #TODO: alert
+        return FALSE
+
+    
+    # init com
+    if (SERIAL.init_com('com' + cf.get('comconf','com_num'), cf.get('comconf', 'baudrate'), cf.get('com_conf', 'stopbits'), cf.get('com_conf','bytesize')) == 0):
+        print("com%d open fail<<<" %cf.get('comconf','com_num')) 
+        #TODO:alert
+        return FALSE
+
+    SERIAL.port_open()
+    SERIAL.message.clear()    
+
+
+# init com
+#init_com_by_conf()
+
+# init by config
 init_form_by_config()
 
-#init tk form
-#init_form()
+# init tk form
+# init_form()
 
 # layout weight
 root.columnconfigure(1, weight=1)
