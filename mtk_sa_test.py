@@ -17,6 +17,7 @@ test_run = 0
 root = tkinter.Tk()
 
 
+btn_name = locals()
 
 root.title("MTK SA TestV1.0.1")
 SERIAL = com()
@@ -241,7 +242,16 @@ def center_window(root, width, height):
     root.geometry(size)
 
 
+#button action
+def button_1_test():
+    print(sys._getframe().f_code.co_name)
 
+    item_idx = 1
+    btn_name['btn%s'%item_idx].config(state="disabled")
+    pass
+
+
+#create widget list
 def init_form_by_config():
     cf=configparser.ConfigParser()
     
@@ -254,112 +264,31 @@ def init_form_by_config():
     #item = cf.items('comconf')                 #某个域下的所有key，value对
     #value=cf.get('comconf','com_num')       #获取某个yu下的key对应的value值
     #cf.type(value)                          #获取的value值的类型
-
+    print(sec)
     grid_column = 0
     grid_row = 0
+    item_idx = 1
     for section  in sec:
-        if  section.find('sa_item') > 0:
-            print(section)
-            lb1 = Label(root, text="测试文件：")
-            lb1.grid(column=grid_column, row=grid_row)
+        print(section.find('sa_item'))
+        if  section.find('sa_item') == 0:   #pos = 0
+            #item
+            grid_column = 0
+            lb1 = Label(root, text= cf.get(section,'item_name'))
+            lb1.grid(column=grid_column, row=grid_row, padx=10, pady=5, sticky=W)
+            #status
+            grid_column = 1
+            en_status = Entry(root)
+            en_status.grid(column=grid_column, row=grid_row, pady=5)
+            en_status.insert(10, "0")
+            #button
+            grid_column = 2
+            func_name = 'button_' + str(item_idx) + '_test'
+            fn_obj = getattr(sys.modules[__name__], func_name, '')
+            btn_name['btn%s'%item_idx] = Button(root, text='test', width=25, command=fn_obj)
+            btn_name['btn%s'%item_idx].grid(column=grid_column, row=grid_row, sticky=E, pady=5)
+            #udpate grid
             grid_row = grid_row + 1
-        else:
-            pass
-
-def init_form():
-    # param
-    grid_column = 0
-    grid_row = 0
-    lb1 = Label(root, text="测试文件：")
-    lb1.grid(column=grid_column, row=grid_row)
-
-    grid_column = grid_column + 1
-    en_lb = Entry(root)
-    en_lb.grid(column=grid_column, row=grid_row, pady=10)
-    en_lb.insert(10, "")
-    en_lb.config(state="disabled")
-
-    # com
-    grid_column = 0
-    grid_row = grid_row + 1
-    lb_pld_borad = Label(root, text="COM")
-    lb_pld_borad.grid(column=grid_column, row=grid_row, pady=10)
-
-    grid_column = grid_column + 1
-    en_com = Entry(root)
-    en_com.grid(column=grid_column, row=grid_row, pady=10)
-    en_com.insert(10, "0")
-
-    # pld board
-    grid_column = 0
-    grid_row = grid_row + 1
-    lb_pld_borad = Label(root, text="PLD板编号")
-    lb_pld_borad.grid(column=grid_column, row=grid_row, pady=10)
-
-    grid_column = grid_column + 1
-    en_pld_borad = Entry(root)
-    en_pld_borad.grid(column=grid_column, row=grid_row, pady=10)
-    en_pld_borad.insert(10, "1")
-
-    # pld board port
-    grid_column = 0
-    grid_row = grid_row + 1
-    lb_pld_port = Label(root, text="PLD板端口编号")
-    lb_pld_port.grid(column=grid_column, row=grid_row, pady=10)
-
-    grid_column = grid_column + 1
-    en_pld_port = Entry(root)
-    en_pld_port.grid(column=grid_column, row=grid_row, pady=10)
-    en_pld_port.insert(10, "1")
-
-    # dc model
-    grid_column = 0
-    grid_row = grid_row + 1
-    lb2 = Label(root, text="电流模式：0小电流1大电流")
-    lb2.grid(column=grid_column, row=grid_row, pady=10)
-
-    grid_column = grid_column + 1
-    en_model = Entry(root)
-    en_model.grid(column=grid_column, row=grid_row, pady=10)
-    en_model.insert(10, "0")
-
-    # dc hz
-    grid_column = 0
-    grid_row = grid_row + 1
-    lb3 = Label(root, text="采样频率（HZ）：")
-    lb3.grid(column=grid_column, row=grid_row, pady=10)
-
-    grid_column = grid_column + 1
-    en_hz = Entry(root)
-    en_hz.grid(column=grid_column, row=grid_row, pady=10)
-    en_hz.insert(10, "1000")
-
-    # dc total time
-    grid_column = 0
-    grid_row = grid_row + 1
-    lb4 = Label(root, text="采样时长（秒）：")
-    lb4.grid(column=grid_column, row=grid_row, pady=10)
-
-    grid_column = grid_column + 1
-    en_time = Entry(root)
-    en_time.grid(column=grid_column, row=grid_row, pady=10)
-    en_time.insert(10, "5")
-
-    # button
-    grid_row = grid_row + 3
-    grid_column = 0
-    button1 = Button(root, text='Start', width=25, command=button_start)
-    button1.grid(column=grid_column, row=grid_row, sticky=E, pady=40)
-
-    grid_column = grid_column + 1
-    button = Button(root, text='Stop', width=25, command=button_stop)
-    button.grid(column=grid_column, row=grid_row, sticky=E, pady=40)
-
-    grid_column = 1
-    grid_row = grid_row + 1
-    button_show = Button(root, text='draw', width=25, command=button_draw)
-    button_show.grid(column=grid_column, row=grid_row, sticky=E, pady=0)
-
+            item_idx = item_idx + 1
 
 #init by config
 init_form_by_config()
@@ -371,6 +300,6 @@ init_form_by_config()
 root.columnconfigure(1, weight=1)
 
 # main UI
-center_window(root, 450, 500)
+center_window(root, 450, 600)
 # 进入消息循环
 root.mainloop()
