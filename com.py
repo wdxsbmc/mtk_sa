@@ -143,6 +143,31 @@ class com():
             else:
                 return 0
 
+    def send_recv_data(self, cmd):
+
+        if (self.ser.is_open):
+            
+            send_barr = bytearray(cmd)
+
+            self.send_data(cmd)
+
+            time.sleep(1)
+
+            self.read_data()
+
+            recv_data = self.message
+
+            barr = bytearray(recv_data)
+
+            if (barr.count == 0):
+                return 0
+            if (barr[0] == send_barr[0]):
+                # check tag
+                return 1
+            else:
+                return 0
+
+
     # 转成16进制的函数
     def convert_hex(self, string):
         res = []

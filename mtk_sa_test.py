@@ -11,6 +11,8 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import configparser
+from sa_logger import sa_logger
+
 
 test_run = 0
 
@@ -26,213 +28,9 @@ result_data = []
 
 SA_CONFIG_INI_PATH= ".\sa_config.ini"
 
-# read save data thread
-def read_data_thd(SERIAL, test_run):
-    #time.sleep(1)
-    while test_run:
-        if (SERIAL.port_is_open()):
-            SERIAL.read_data()
-            time.sleep(0.5)
+LOG_FILE = ".\sa_log.log"
+LOG = sa_logger(logname=LOG_FILE, loglevel=1, logger="yourname").getlog()
 
-
-def parse_save_thd(SERIAL, test_run, file_name):
-
-    pkt_offset = 0
-    time.sleep(1)
-    old_len = 0
-    old_offset = 0
-    parse_msg = SERIAL.message[old_len:]
-    b_find = 0
-    b_finish = 0
-
-    while test_run:
-
-        time.sleep(0.5)
-        # get pkt
-        #parse_msg.extend(SERIAL.message[old_len:])
-        #old_len = len(parse_msg)
-
-        parse_msg = SERIAL.message
-        # print(pkt_offset,len(parse_msg))
-        # parse message
-        while (pkt_offset < len(parse_msg)):
-
-            # wait next pkt or stop
-            if (pkt_offset + 4 > len(parse_msg)):
-                if (old_offset != pkt_offset):
-                    print('break1 at:',pkt_offset)
-                    old_offset = pkt_offset
-                break
-
-            # find pkt head
-            # print(pkt_offset,len(parse_msg))
-            b_find = 0
-            for i in range(pkt_offset, len(parse_msg)):
-                if (parse_msg[i - 1] == 0xFE and parse_msg[i] == 0x68):
-                    pkt_offset = i  #move offset
-                    b_find = 1
-                    break
-            if (b_find == 0):
-                break
-
-            # get pkt data len          
-            if(pkt_offset + 4 > len(parse_msg)):
-                print(pkt_offset,len(parse_msg))
-                continue
-
-            pkt_data_len = parse_msg[pkt_offset + 4]
-            if (pkt_data_len == 0):
-                pkt_offset = pkt_offset + 6  #skip first rsp
-                continue
-
-            # check finsih
-            #if (parse_msg[pkt_offset + 8] == 0x80):
-                #b_finish = 1
-
-            # get pkt data
-            pkt_data_len = pkt_data_len - 5  #skip Seq(4bytes)+CUR_MOD(1byte)
-            pkt_data = parse_msg[pkt_offset + 10:
-                                 pkt_offset + 10 + pkt_data_len]
-            pkt_offset = pkt_offset + 10 + pkt_data_len
-            print(pkt_data)
-
-            # save data
-            with open(file_name, 'a') as fp:
-                for i in range(0, len(pkt_data), 2):
-                    if(i+2 > len(pkt_data)):
-                        print(i,len(pkt_data))
-                        break
-                    #dcL dcH =>int16
-                    dc_value = 0
-                    dc_value = pkt_data[i + 1]
-                    dc_value <<= 8
-                    dc_value = dc_value | pkt_data[i]
-                    fp.write(str(dc_value) + ',')
-                    # save numpy
-                    result_data.append(dc_value)
-
-            # check finish
-            #if (b_finish == 1):
-                # stop parse
-                #return
-
-
-# button sttart
-def button_start():
-    print("test start>>>")
-    button1.config(state="disabled")
-    # init filename
-    file_name = ".\dc_current_data"
-    file_name += time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(
-        time.time()))
-    file_name += ".txt"
-    en_lb.config(state="normal")
-    en_lb.insert(20, file_name)
-    en_lb.config(state="disabled")
-
-    # clean plot data
-    result_data.clear()
-
-    # init com
-    if (SERIAL.init_com('com' + en_com.get()) == 0):
-        button1.config(state="normal")
-        print("com%d open fail<<<" % int(en_com.get()))
-        return
-    SERIAL.port_open()
-    SERIAL.message.clear()
-
-    # start test
-    data = []
-    data.append(int(en_model.get()))
-    n_hz = int(en_hz.get())
-    data.append(n_hz & 0xFF)
-    n_hz >>= 8
-    data.append(n_hz & 0xFF)
-
-    n_time = int(en_time.get())
-    data.append(n_time & 0xFF)
-    n_time >>= 8
-    data.append(n_time & 0xFF)
-    n_time >>= 8
-    data.append(n_time & 0xFF)
-    n_time >>= 8
-    data.append(n_time & 0xFF)
-
-    data_len = len(data)
-    ret = SERIAL.cmd_send(en_pld_borad.get(),
-                          en_pld_port.get(), 0x07, data_len, data, 0x87)
-
-    if (ret == 1):
-        # thread for recv
-        test_run = 1
-        _thread.start_new_thread(read_data_thd, (SERIAL, test_run))
-        time.sleep(1)
-        _thread.start_new_thread(parse_save_thd, (SERIAL, test_run, file_name))
-
-
-# button stop
-def button_stop():
-    test_run = 0
-    time.sleep(3)
-    # send stop cmd
-    data1 = []
-    ret = SERIAL.cmd_send_recv(en_pld_borad.get(),
-                               en_pld_port.get(), 0x08, 0, data1, 0x88)
-
-    # close port
-    SERIAL.message.clear()
-    SERIAL.port_close()
-
-    #root.destroy()
-    print("test stop<<<")
-    button1.config(state="normal")
-
-# button draw
-def button_draw():
-    # 通过rcParams设置全局横纵轴字体大小
-    mpl.rcParams['xtick.labelsize'] = 24
-    mpl.rcParams['ytick.labelsize'] = 24
-
-    #np.random.seed(42)
-    y = np.array(result_data)
-
-    # x轴的采样点
-    #x = np.linspace(0, 5, 100)
-    x_data = []
-    for i in range(0, len(result_data)):
-        x_data.append(i)
-
-    x = np.array(x_data)
-    # 通过下面曲线加上噪声生成数据，所以拟合模型就用y了……
-    #y = 2*np.sin(x) + 0.3*x**2
-    #y_data = y + np.random.normal(scale=0.3, size=100)
-
-    # figure()指定图表名称
-    #plt.figure('data')
-
-    # '.'标明画散点图，每个散点的形状是个圆
-    plt.plot(x, y, '.')
-
-    # 画模型的图，plot函数默认画连线图
-    #plt.figure('model')
-    #plt.plot(x, y)
-
-    # 两个图画一起
-    #plt.figure('data & model')
-
-    # 通过'k'指定线的颜色，lw指定线的宽度
-    # 第三个参数除了颜色也可以指定线形，比如'r--'表示红色虚线
-    # 更多属性可以参考官网：http://matplotlib.org/api/pyplot_api.html
-    plt.plot(x, y, 'k', lw=3)
-
-    # scatter可以更容易地生成散点图
-    plt.scatter(x, y)
-
-    # 将当前figure的图保存到文件result.png
-    plt.savefig('result.png')
-
-    # 一定要加上这句才能让画好的图显示在屏幕上
-    plt.show()
 
 # centrer
 def center_window(root, width, height):
@@ -244,21 +42,41 @@ def center_window(root, width, height):
     root.geometry(size)
 
 
-def string parse_data(msg):
-    data = msg[1:msg[1]]
+def parse_data(msg):
+    len  = 0
+    if(msg[1]&0x80 == 0x80):
+        # more bytes
+        if(msg[1]&0x7F == 1):
+            len = msg[2]
+            data = msg[2:len]        
+        elif(msg[1]&0x7F == 2):
+            len = (msg[2]<<8)&0xFF00 + (msg[3]&0xFF);
+            data = msg[3:len]        
+        elif(msg[1]&0x7F == 3):
+            len = (msg[2]<<16)&0xFFFF00 + (msg[3]<<8)&0xFF00 + msg[4]&0xFF;
+            data = msg[4:len]        
+    else:
+        # one byte
+        len = msg[1]&0xFF
+        data = msg[1:len]        
     return ''.join(data)
 
 # send recv data thread
 def send_recv_data_thd(SERIAL, item_idx, data):
     if (SERIAL.port_is_open()):
+        # send log
+        LOG.info(binascii.b2a_hex(str(bytearray(data))))
+        # send and recv
         SERIAL.send_recv_data(data)
-        #parse pkt
+        # recv log
+        LOG.info(binascii.b2a_hex(str(bytearray(SERIAL.message))))
+        # parse pkt
         parse_msg = SERIAL.message
         if(parse_msg[0] == 0x01):
             str_info = parse_data(parse_msg)
             status_name['status%s'%item_idx].insert(10, str_info)
             pass
-        else if(parse_msg[0] == 0x02):
+        elif(parse_msg[0] == 0x02):
             pass
 
     # enable the button
@@ -269,13 +87,93 @@ def button_1_test():
     print(sys._getframe().f_code.co_name)
 
     # disable button
-    item_idx = 1
+    item_idx = int(sys._getframe().f_code.co_name[7:8])
     btn_name['btn%s'%item_idx].config(state="disabled")
 
     # send data
-    data[]
+    data = []
     # tag
     data.append(0x01)
+    # len
+    data.append(0x01)
+    # data
+    data.append(0x00)
+
+    # thread
+    _thread.start_new_thread(send_recv_data_thd, (SERIAL, item_idx ,data))  
+    pass
+
+def button_2_test():
+    print(sys._getframe().f_code.co_name)
+
+    # disable button
+    item_idx = int(sys._getframe().f_code.co_name[7:8])
+    btn_name['btn%s'%item_idx].config(state="disabled")
+
+    # send data
+    data = []
+    # tag
+    data.append(0x02)
+    # len
+    data.append(0x01)
+    # data
+    data.append(0x00)
+
+    # thread
+    _thread.start_new_thread(send_recv_data_thd, (SERIAL, item_idx ,data))  
+    pass
+
+def button_3_test():
+    print(sys._getframe().f_code.co_name)
+
+    # disable button
+    item_idx = int(sys._getframe().f_code.co_name[7:8])
+    btn_name['btn%s'%item_idx].config(state="disabled")
+
+    # send data
+    data = []
+    # tag
+    data.append(0x03)
+    # len
+    data.append(0x01)
+    # data
+    data.append(0x00)
+
+    # thread
+    _thread.start_new_thread(send_recv_data_thd, (SERIAL, item_idx ,data))  
+    pass
+
+def button_4_test():
+    print(sys._getframe().f_code.co_name)
+
+    # disable button
+    item_idx = int(sys._getframe().f_code.co_name[7:8])
+    btn_name['btn%s'%item_idx].config(state="disabled")
+
+    # send data
+    data = []
+    # tag
+    data.append(0x04)
+    # len
+    data.append(0x01)
+    # data
+    data.append(0x00)
+
+    # thread
+    _thread.start_new_thread(send_recv_data_thd, (SERIAL, item_idx ,data))  
+    pass
+
+def button_5_test():
+    print(sys._getframe().f_code.co_name)
+
+    # disable button
+    item_idx = int(sys._getframe().f_code.co_name[7:8])
+    btn_name['btn%s'%item_idx].config(state="disabled")
+
+    # send data
+    data = []
+    # tag
+    data.append(0x05)
     # len
     data.append(0x01)
     # data
@@ -332,8 +230,9 @@ def init_com_by_conf():
 
     # check config file 
     cf.read(SA_CONFIG_INI_PATH)
-    if !cf:
+    if not cf:
         print('sa_config.ini open fail!')
+        LOG.info()
         #TODO: alert
         return FALSE
 
@@ -341,6 +240,7 @@ def init_com_by_conf():
     # init com
     if (SERIAL.init_com('com' + cf.get('comconf','com_num'), cf.get('comconf', 'baudrate'), cf.get('com_conf', 'stopbits'), cf.get('com_conf','bytesize')) == 0):
         print("com%d open fail<<<" %cf.get('comconf','com_num')) 
+        LOG.info("com%d open fail<<<" %cf.get('comconf','com_num')) 
         #TODO:alert
         return FALSE
 
