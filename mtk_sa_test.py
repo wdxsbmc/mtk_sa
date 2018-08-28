@@ -12,7 +12,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import configparser
 from sa_logger import sa_logger
-
+import binascii
 
 test_run = 0
 
@@ -29,7 +29,7 @@ result_data = []
 SA_CONFIG_INI_PATH= ".\sa_config.ini"
 
 LOG_FILE = ".\sa_log.log"
-LOG = sa_logger(logname=LOG_FILE, loglevel=1, logger="yourname").getlog()
+LOG = sa_logger(logname=LOG_FILE, loglevel=1, logger="SA").getlog()
 
 
 # centrer
@@ -65,11 +65,11 @@ def parse_data(msg):
 def send_recv_data_thd(SERIAL, item_idx, data):
     if (SERIAL.port_is_open()):
         # send log
-        LOG.info(binascii.b2a_hex(str(bytearray(data))))
+        LOG.info(binascii.b2a_hex(str(bytearray(data)).encode()))
         # send and recv
         SERIAL.send_recv_data(data)
         # recv log
-        LOG.info(binascii.b2a_hex(str(bytearray(SERIAL.message))))
+        LOG.info(binascii.b2a_hex(str(bytearray(SERIAL.message)).encode()))
         # parse pkt
         parse_msg = SERIAL.message
         if(parse_msg[0] == 0x01):
@@ -78,7 +78,8 @@ def send_recv_data_thd(SERIAL, item_idx, data):
             pass
         elif(parse_msg[0] == 0x02):
             pass
-
+    else:
+        print("com open fail!")     
     # enable the button
     btn_name['btn%s'%item_idx].config(state="normal")
 
@@ -188,7 +189,13 @@ def button_5_test():
 def init_form_by_config():
 
     cf=configparser.ConfigParser()
-    cf.read(".\sa_config.ini")
+    cf.read(".\sa_config.ini", encoding='UTF-8')
+    if not cf:
+        print('sa_config.ini open fail!')
+        LOG.info('sa_config.ini open fail!')
+        #TODO: alert
+        return False
+
     sec = []
     option= []
     item = []
@@ -229,27 +236,25 @@ def init_com_by_conf():
     cf=configparser.ConfigParser()
 
     # check config file 
-    cf.read(SA_CONFIG_INI_PATH)
+    cf.read(SA_CONFIG_INI_PATH,encoding= 'UTF-8')
     if not cf:
         print('sa_config.ini open fail!')
-        LOG.info()
+        LOG.info('sa_config.ini open fail!')
         #TODO: alert
-        return FALSE
+        return False
 
     
     # init com
-    if (SERIAL.init_com('com' + cf.get('comconf','com_num'), cf.get('comconf', 'baudrate'), cf.get('com_conf', 'stopbits'), cf.get('com_conf','bytesize')) == 0):
-        print("com%d open fail<<<" %cf.get('comconf','com_num')) 
-        LOG.info("com%d open fail<<<" %cf.get('comconf','com_num')) 
+    if (SERIAL.init_com('com' + cf.get('comconf','com_num'), cf.get('comconf', 'baudrate'), cf.get('comconf', 'stopbits'), cf.get('comconf','bytesize')) == 0):
+        print("com%d open fail<<<" %int(cf.get('comconf','com_num'))) 
+        LOG.info("com%d open fail<<<" %int(cf.get('comconf','com_num'))) 
         #TODO:alert
-        return FALSE
+        return False
 
     SERIAL.port_open()
     SERIAL.message.clear()    
+    return True
 
-
-# init com
-#init_com_by_conf()
 
 # init by config
 init_form_by_config()
@@ -264,3 +269,6 @@ root.columnconfigure(1, weight=1)
 center_window(root, 450, 600)
 # 进入消息循环
 root.mainloop()
+
+# init com
+init_com_by_conf()

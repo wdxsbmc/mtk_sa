@@ -7,6 +7,7 @@ import time
 
 class com():
 
+    ser_is_open = False
     message = []
 
     def __init__(self):
@@ -25,10 +26,13 @@ class com():
                 stopbits=serial.STOPBITS_ONE,
                 bytesize=serial.EIGHTBITS)
         except IOError:
+            self.ser_is_open = False
             return 0
         else:
             if not self.ser.isOpen():
                 self.ser.open()
+        
+        self.ser_is_open = True
         return 1
 
     def init_com(self, com_port, com_baudrate, com_stopbits, com_bytesize):
@@ -40,18 +44,21 @@ class com():
         try:
             self.ser = serial.Serial(
                 port=self.com_port,
-                baudrate=self.com_baudrate,
-                stopbits=self.com_stopbits,
-                bytesize=self.com_bytesize)
+                baudrate=int(self.com_baudrate),
+                stopbits=int(self.com_stopbits),
+                bytesize=int(self.com_bytesize))
         except IOError:
+            self.ser_is_open = False
             return 0
         else:
             if not self.ser.isOpen():
                 self.ser.open()
+
+        self.ser_is_open = True                
         return 1
 
     def port_is_open(self):
-        return self.ser.isOpen()
+        return self.ser_is_open
 
     def port_open(self):
         if not self.ser.isOpen():
