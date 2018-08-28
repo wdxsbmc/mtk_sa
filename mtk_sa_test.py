@@ -23,6 +23,8 @@ btn_name = locals()
 status_name = locals()
 
 root.title("MTK SA TestV1.0.1")
+
+
 SERIAL = com()
 result_data = []
 
@@ -66,10 +68,15 @@ def send_recv_data_thd(SERIAL, item_idx, data):
     if (SERIAL.port_is_open()):
         # send log
         LOG.info(binascii.b2a_hex(str(bytearray(data)).encode()))
+        listbox.insert(END,binascii.b2a_hex(str(bytearray(data)).encode()))
+
+
         # send and recv
         SERIAL.send_recv_data(data)
         # recv log
         LOG.info(binascii.b2a_hex(str(bytearray(SERIAL.message)).encode()))
+        listbox.insert(END,binascii.b2a_hex(str(bytearray(SERIAL.message)).encode()))
+     
         # parse pkt
         parse_msg = SERIAL.message
         if(parse_msg[0] == 0x01):
@@ -79,7 +86,8 @@ def send_recv_data_thd(SERIAL, item_idx, data):
         elif(parse_msg[0] == 0x02):
             pass
     else:
-        print("com open fail!")     
+        print("com open fail!")   
+        listbox.insert(END,"com open fail!")
     # enable the button
     btn_name['btn%s'%item_idx].config(state="normal")
 
@@ -229,7 +237,9 @@ def init_form_by_config():
             #udpate grid
             grid_row = grid_row + 1
             item_idx = item_idx + 1
-
+    
+    listbox = Listbox(root,width=50)
+    listbox.grid(column=0, row=grid_row, sticky=E, pady=5)
 #init com
 def init_com_by_conf():
     # read config file
@@ -248,6 +258,8 @@ def init_com_by_conf():
     if (SERIAL.init_com('com' + cf.get('comconf','com_num'), cf.get('comconf', 'baudrate'), cf.get('comconf', 'stopbits'), cf.get('comconf','bytesize')) == 0):
         print("com%d open fail<<<" %int(cf.get('comconf','com_num'))) 
         LOG.info("com%d open fail<<<" %int(cf.get('comconf','com_num'))) 
+
+ 
         #TODO:alert
         return False
 
