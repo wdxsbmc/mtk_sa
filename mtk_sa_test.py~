@@ -88,7 +88,9 @@ def send_recv_data_thd(SERIAL, item_idx, data):
 
     if (SERIAL.port_is_open()):
         
+        status_name['status%s'%item_idx].delete(0,END)
         status_name['status%s'%item_idx].insert(10, "NA")
+        
         SERIAL.message.clear()   
         # send log
         log_str="send>>>" + str(binascii.b2a_hex(bytearray(data)))
@@ -180,7 +182,7 @@ def button_3_test():
     # thread
     _thread.start_new_thread(send_recv_data_thd, (SERIAL, item_idx ,data))  
 
-pass
+    pass
 
 def button_4_test():
     print(sys._getframe().f_code.co_name)
@@ -316,7 +318,7 @@ init_form_by_config()
 root.columnconfigure(1, weight=1)
 
 # main UI
-center_window(root, 500, 400)
+center_window(root, 550, 450)
 
 
 # init com

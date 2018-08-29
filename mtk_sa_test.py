@@ -177,14 +177,35 @@ def button_3_test():
     # len
     data.append(0x01)
     # data
+    data.append(0x01)
+
+    # thread
+    _thread.start_new_thread(send_recv_data_thd, (SERIAL, item_idx ,data))  
+
+    pass
+
+def button_4_test():
+    print(sys._getframe().f_code.co_name)
+
+    # disable button
+    item_idx = int(sys._getframe().f_code.co_name[7:8])
+    btn_name['btn%s'%item_idx].config(state="disabled")
+
+    # send data
+    data = []
+    # tag
+    data.append(0x03)
+    # len
+    data.append(0x01)
+    # data
     data.append(0x00)
 
     # thread
     _thread.start_new_thread(send_recv_data_thd, (SERIAL, item_idx ,data))  
 
-pass
+    pass
 
-def button_4_test():
+def button_5_test():
     print(sys._getframe().f_code.co_name)
 
     # disable button
@@ -204,7 +225,7 @@ def button_4_test():
     _thread.start_new_thread(send_recv_data_thd, (SERIAL, item_idx ,data))  
     pass
 
-def button_5_test():
+def button_6_test():
     print(sys._getframe().f_code.co_name)
 
     # disable button
@@ -318,7 +339,7 @@ init_form_by_config()
 root.columnconfigure(1, weight=1)
 
 # main UI
-center_window(root, 500, 400)
+center_window(root, 550, 450)
 
 
 # init com

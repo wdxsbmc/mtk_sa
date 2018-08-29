@@ -10,14 +10,11 @@ item_onoff=1
 item_name=电池充电状态
 item_onff=1
 [sa_item3]
-item_name=打开蓝牙单通道广播
+item_name=进入蓝牙单通道广播
 item_onoff=1
 [sa_item4]
-item_name=关闭蓝牙单通道广播
-item_onoff=1
-[sa_item5]
 item_name=进入休眠
 item_onoff=1
-[sa_item6]
+[sa_item5]
 item_name=sensorhub连通测试
 item_onoff=1
