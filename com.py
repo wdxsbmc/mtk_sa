@@ -58,15 +58,18 @@ class com():
         return 1
 
     def port_is_open(self):
+        
         return self.ser_is_open
 
     def port_open(self):
         if not self.ser.isOpen():
             self.ser.open()
+            self.ser_is_open = True  
 
     def port_close(self):
         self.ser.close()
-
+        self.ser_is_open = False
+          
     def send_data(self, data):
         number = self.ser.write(data)
         return number

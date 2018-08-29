@@ -88,9 +88,7 @@ def send_recv_data_thd(SERIAL, item_idx, data):
 
     if (SERIAL.port_is_open()):
         
-        status_name['status%s'%item_idx].delete(0,END)
         status_name['status%s'%item_idx].insert(10, "NA")
-        
         SERIAL.message.clear()   
         # send log
         log_str="send>>>" + str(binascii.b2a_hex(bytearray(data)))
