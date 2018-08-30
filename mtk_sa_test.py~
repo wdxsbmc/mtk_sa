@@ -23,6 +23,7 @@ global test_items
 test_items = 0
 
 root.title("MTK SA TestV1.0.1")
+root.iconbitmap('myico.ico')
 listbox = Listbox(root,width=80)
 scr3 = Scrollbar(root)
 listbox.configure(yscrollcommand = scr3.set)
@@ -93,7 +94,7 @@ def send_recv_data_thd(SERIAL, item_idx, data):
         
         SERIAL.message.clear()   
         # send log
-        log_str="send>>>" + str(binascii.b2a_hex(bytearray(data)))
+        log_str="send>>>" + binascii.b2a_hex(bytearray(data)).decode('utf-8')
         LOG.info(log_str)
         listbox.insert(END,log_str)
         listbox.yview_moveto(1.0)
@@ -101,7 +102,7 @@ def send_recv_data_thd(SERIAL, item_idx, data):
         # send and recv
         SERIAL.send_recv_data(data)
         # recv log
-        log_str="recv<<<" + str(binascii.b2a_hex(bytearray(SERIAL.message)))
+        log_str="recv<<<" + binascii.b2a_hex(bytearray(SERIAL.message)).decode('utf-8')
         LOG.info(log_str)
         listbox.insert(END,log_str)
         listbox.select_set(END,END) 
@@ -177,7 +178,7 @@ def button_3_test():
     # len
     data.append(0x01)
     # data
-    data.append(0x00)
+    data.append(0x01)
 
     # thread
     _thread.start_new_thread(send_recv_data_thd, (SERIAL, item_idx ,data))  
@@ -185,6 +186,27 @@ def button_3_test():
     pass
 
 def button_4_test():
+    print(sys._getframe().f_code.co_name)
+
+    # disable button
+    item_idx = int(sys._getframe().f_code.co_name[7:8])
+    btn_name['btn%s'%item_idx].config(state="disabled")
+
+    # send data
+    data = []
+    # tag
+    data.append(0x03)
+    # len
+    data.append(0x01)
+    # data
+    data.append(0x00)
+
+    # thread
+    _thread.start_new_thread(send_recv_data_thd, (SERIAL, item_idx ,data))  
+
+    pass
+
+def button_5_test():
     print(sys._getframe().f_code.co_name)
 
     # disable button
@@ -204,7 +226,7 @@ def button_4_test():
     _thread.start_new_thread(send_recv_data_thd, (SERIAL, item_idx ,data))  
     pass
 
-def button_5_test():
+def button_6_test():
     print(sys._getframe().f_code.co_name)
 
     # disable button
@@ -266,7 +288,7 @@ def init_form_by_config():
             grid_column = 2
             func_name = 'button_' + str(item_idx) + '_test'
             fn_obj = getattr(sys.modules[__name__], func_name, '')
-            btn_name['btn%s'%item_idx] = Button(root, text='test', width=25, command=fn_obj)
+            btn_name['btn%s'%item_idx] = Button(root, text='测试', width=25, command=fn_obj)
             btn_name['btn%s'%item_idx].grid(column=grid_column, row=grid_row, sticky=E, pady=5)
             #udpate grid
             grid_row = grid_row + 1
